@@ -2,7 +2,7 @@
 .vscode/
 src/snowdat/__pycache__/
 *.pyc
-*.ipynb
+/*.ipynb
 src/nsidc_snodas/pycache/
 src/*.egg-info/
 data/*

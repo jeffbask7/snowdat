@@ -48,13 +48,13 @@ class DatetimeParts:
             raise ValueError('Duration must be one of 0 6 12 18')
         return f"{self.dt.hour:02d}"
     
-    def hour_str_fill(self, length):
-        return (str(self.dt.hour)).zfill(length)
-    
+    @property
     def microsecond_str(self):
         return self.dt.strftime(r'%f')
     
-
+    def hour_str_fill(self, length):
+        return (str(self.dt.hour)).zfill(length)
+    
     def Duration(self, duration, length=2):
         if duration not in [6,24,48,72]:
             raise ValueError('Duration must be one of 6 24 48 72')
@@ -102,7 +102,7 @@ def snowdas_to_cog(ds, product='snow depth', date=None) -> str:
     file_out = f"data/snodas_cog/snodas-{product.replace(' ', '')}-{date_str}.tif"
     snow_depth.rio.to_raster(file_out,
                             driver="COG",
-                            dtype="float32",   # or your dtype
+                            dtype="float32",
                             compress="deflate",
                             blocksize=512,
                             num_threads="ALL_CPUS",
