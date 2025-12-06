@@ -10,11 +10,13 @@ from .snowdat_utils import DatetimeParts
 from .style_def import cmap_snow_accum
 from .style_def import cmap_snow_depth
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2] 
 
-
-def get_nohrsc(date, file_type='png', export_dir='data') -> Path:
+def get_nohrsc(date, file_type='png', export_dir=None) -> Path:
     url = f"https://www.nohrsc.noaa.gov/snowfall_v2/data/{date.year}{date.month_str}/sfav2_CONUS_{date.duration}h_{date.year}{date.month_str}{date.day_str}{date.hour_str}.{file_type}"
     url_path = Path(url)  
+    if export_dir is None:
+        export_dir = Path(PROJECT_ROOT, 'data')
     dir_path = Path(export_dir, f'nohrsc_{file_type}', f'{date.year}{date.month_str}')
     file_path = dir_path / url_path.name
     dir_path.mkdir(parents=True, exist_ok=True)

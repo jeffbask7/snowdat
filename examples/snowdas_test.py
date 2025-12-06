@@ -4,11 +4,12 @@ from datetime import datetime
 
 date = sn.DatetimeParts(datetime(2025,12,6,0))
 products = ['SNOW PRECIP', 'SNOW DEPTH']
-print(date.day_name)
-print(date.month_name)
-print(date.date_str)
+
+#DOWNLOAD AND EXTRACT TAR FILE 
 ds = sn.snowdas_dl(date)
+
+#PROCESS PRODUCTS
 for product in products:
     product = product.lower()
     outfile_name = sn.snowdas_to_cog(ds, product=product, date=date)
-    sn.plot_snow(ds, product, date)
+    sn.plot_snowdas(ds, product, date)

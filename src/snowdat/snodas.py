@@ -10,6 +10,8 @@ import matplotlib.ticker as ticker
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from datetime import datetime
+from pathlib import Path
+import os
 
 from snowdat.style_def import cmap_snow_accum
 from snowdat.style_def import cmap_snow_depth
@@ -37,9 +39,9 @@ SNODAS_PRODUCTS = {'SNOW MELT':"zz_ssmv11044bS__T0024TTNATSYYYYMMDD05DP000.dat.g
                 }
  
  
-           
+PROJECT_ROOT = Path(__file__).resolve().parents[2]          
 
-def snowdas_dl(date, products=None):
+def snowdas_dl(date, products=None) -> xr.Dataset:
     if products is None:
         products = ['SNOW PRECIP', 'SNOW DEPTH'] 
     date = DatetimeParts(date)
@@ -85,7 +87,7 @@ def snowdas_dl(date, products=None):
 
                         data = data.reshape(nrows, ncols)
                         data = np.where(data == -9999, 0, data)
-                        print(data)
+                        #print(data)
                         product_name = key.lower()
                         ds = xr.Dataset({product_name: (["y","x"], data)}, coords={'latitude': ('y', lats), 'longitude': ('x', lons)})
                         ds_list.append(ds)
@@ -93,7 +95,7 @@ def snowdas_dl(date, products=None):
     return ds
 
 
-def plot_snow(ds, product_name, date, levels=None, vmin=None, vmax=None, cmap=None, tickspace=1):
+def plot_snowdas(ds, product_name, date, levels=None, vmin=None, vmax=None, cmap=None, tickspace=1, bounding_box=None):
     #key_var = list(ds.data_vars.keys())[0]
     ds4 = ds.coarsen(x=4, y=4, boundary='trim').mean()
     ts = ds4[product_name]
@@ -110,14 +112,19 @@ def plot_snow(ds, product_name, date, levels=None, vmin=None, vmax=None, cmap=No
         vmax = 24
     else:
         raise ValueError(f"Invalid product name: {product_name}. Must be 'snow depth' or 'snow precip'.")
+    if bounding_box is not None:
+        extent = (bounding_box['xmin'], bounding_box['xmax'], bounding_box['ymin'], bounding_box['ymax'])
     #print(ts)
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(13,8), subplot_kw=dict(projection=ccrs.PlateCarree()))
     contour = ax.contourf(ts.longitude.values, ts.latitude.values, (np.squeeze(ts.values))*scale, transform=ccrs.PlateCarree(), levels=levels, vmin=vmin, vmax=vmax, cmap=cmap, extend='max')
+    if bounding_box is not None:
+        extent = (bounding_box['xmin'], bounding_box['xmax'], bounding_box['ymin'], bounding_box['ymax'])
+        ax.set_extent(extent, crs=ccrs.PlateCarree())
     ax.add_feature(cfeature.COASTLINE, edgecolor='black', facecolor='none')
     ax.add_feature(cfeature.STATES, edgecolor='black', facecolor='none')
     custom_ticks = np.arange(0, vmax+1, tickspace)
     cbar = fig.colorbar(contour, ticks=custom_ticks, shrink=1.0, orientation='horizontal', pad=0.03, aspect=60)
     plt.title(f'SNODAS {product_name} {date.date_str}')
-    fig.savefig(f'data/SNODAS-{product_name}-{date.date_str}.png')
+    fig.savefig(f'{PROJECT_ROOT}/data/snodas_png/SNODAS-{product_name}-{date.date_str}.png')
 
 
