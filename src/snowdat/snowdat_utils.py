@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 import rioxarray  as rio
 from rasterio.transform import from_bounds
+from snowdat.style_def import cmap_snow_accum
+from snowdat.style_def import cmap_snow_depth
 
 
 
@@ -65,6 +67,10 @@ class DatetimeParts:
 def snowdas_to_cog(ds, product='snow depth', date=None) -> str:
     snow_depth = ds[product].astype('float32')  # work with the DataArray you want
 
+
+    scale_factor = 0.03937  # m → in
+    snow_depth.attrs.update(units="in", scale_factor=scale_factor)
+
     lon = ds.longitude.values
     lat = ds.latitude.values
 
@@ -93,7 +99,7 @@ def snowdas_to_cog(ds, product='snow depth', date=None) -> str:
     )
 
     date_str = f"{date.year_str}{date.month_str}{date.day_str}"
-    file_out = f"data/snodas-{product.replace(' ', '')}-{date_str}.tif"
+    file_out = f"data/snodas_cog/snodas-{product.replace(' ', '')}-{date_str}.tif"
     snow_depth.rio.to_raster(file_out,
                             driver="COG",
                             dtype="float32",   # or your dtype
@@ -102,3 +108,5 @@ def snowdas_to_cog(ds, product='snow depth', date=None) -> str:
                             num_threads="ALL_CPUS",
                             )
     return file_out
+
+

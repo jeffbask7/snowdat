@@ -11,9 +11,9 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from datetime import datetime
 
-from style_def import cmap_snow_accum
-from style_def import cmap_snow_depth
-from snowdat_utils import DatetimeParts
+from snowdat.style_def import cmap_snow_accum
+from snowdat.style_def import cmap_snow_depth
+from snowdat.snowdat_utils import DatetimeParts
 
 
 product1 = "zz_ssmv11044bS__T0024TTNATSYYYYMMDD05DP000.dat.gz" #SNOW MELT
@@ -92,12 +92,32 @@ def snowdas_dl(date, products=None):
     ds = xr.merge(ds_list, compat='override')
     return ds
 
-if __name__ == '__main__':
-    date = DatetimeParts(datetime(2025,12,1,22))
-    products = ['SNOW PRECIP', 'SNOW DEPTH']
-    print(date.day_name)
-    print(date.month_name)
-    print(date.date_str)
-    ds = snowdas_dl(date)
-    print(ds)
-    ds1 =ds
+
+def plot_snow(ds, product_name, date, levels=None, vmin=None, vmax=None, cmap=None, tickspace=1):
+    #key_var = list(ds.data_vars.keys())[0]
+    ds4 = ds.coarsen(x=4, y=4, boundary='trim').mean()
+    ts = ds4[product_name]
+    scale = 0.03937 #(m to inches)/100
+    vmin = 0
+    if product_name == 'snow depth':
+        cmap = cmap_snow_depth
+        levels = np.linspace(0,72,73)
+        vmax = 72
+        tickspace = 3
+    elif product_name == 'snow precip':
+        cmap = cmap_snow_accum
+        levels = np.linspace(0,24,100)
+        vmax = 24
+    else:
+        raise ValueError(f"Invalid product name: {product_name}. Must be 'snow depth' or 'snow precip'.")
+    #print(ts)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(13,8), subplot_kw=dict(projection=ccrs.PlateCarree()))
+    contour = ax.contourf(ts.longitude.values, ts.latitude.values, (np.squeeze(ts.values))*scale, transform=ccrs.PlateCarree(), levels=levels, vmin=vmin, vmax=vmax, cmap=cmap, extend='max')
+    ax.add_feature(cfeature.COASTLINE, edgecolor='black', facecolor='none')
+    ax.add_feature(cfeature.STATES, edgecolor='black', facecolor='none')
+    custom_ticks = np.arange(0, vmax+1, tickspace)
+    cbar = fig.colorbar(contour, ticks=custom_ticks, shrink=1.0, orientation='horizontal', pad=0.03, aspect=60)
+    plt.title(f'SNODAS {product_name} {date.date_str}')
+    fig.savefig(f'data/SNODAS-{product_name}-{date.date_str}.png')
+
+
